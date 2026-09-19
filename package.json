@@ -1,0 +1,12 @@
+{
+  "name": "ai-nids",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Explainable Network Intrusion Detection System",
+  "scripts": {
+    "dev": "npm run dev --prefix frontend",
+    "build": "npm run build --prefix frontend",
+    "start": "npm run dev --prefix frontend",
+    "backend": "PYTHONPATH=. ./.venv/bin/python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload"
+  }
+}
