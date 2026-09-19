@@ -27,7 +27,11 @@ class StatusUpdateRequest(BaseModel):
 
 
 class SimulateStartRequest(BaseModel):
-    rate_hz: float = Field(2.0, ge=0.2, le=20.0, description="Replay rate in flows per second")
+    rate_hz: float = Field(2.0, ge=0.1, le=100.0, description="Replay rate in flows per second")
+
+
+class SpeedUpdateRequest(BaseModel):
+    rate_hz: float = Field(..., ge=0.1, le=100.0, description="Replay rate in flows per second")
 
 
 @router.get("/health")
@@ -130,6 +134,13 @@ def start_simulation(req: SimulateStartRequest = SimulateStartRequest()):
     """Start replaying network flows in background."""
     simulator = ReplaySimulator.get_instance()
     return simulator.start(rate_hz=req.rate_hz)
+
+
+@router.post("/simulate/speed")
+def update_simulation_speed(req: SpeedUpdateRequest):
+    """Adjust replay rate dynamically while running."""
+    simulator = ReplaySimulator.get_instance()
+    return simulator.set_rate(rate_hz=req.rate_hz)
 
 
 @router.post("/simulate/stop")

@@ -95,6 +95,23 @@ export default function App() {
     }
   };
 
+  // Dynamic speed adjustment on the fly
+  const handleSpeedChange = async (newRate) => {
+    setReplayRate(newRate);
+    if (simStatus.is_running) {
+      try {
+        await fetch(`${API_BASE}/simulate/speed`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rate_hz: newRate }),
+        });
+        await fetchData();
+      } catch (err) {
+        console.error('Failed to dynamically update speed:', err);
+      }
+    }
+  };
+
   // Reset database
   const handleReset = async () => {
     if (window.confirm('Reset all network flow logs and alerts for a clean demo run?')) {
@@ -268,30 +285,34 @@ export default function App() {
 
             {/* Replay Speed Selector */}
             <Tooltip
-              title="Stream Rate Adjustment"
-              description="Controls how many simulated network flows per second are generated and analyzed."
-              details="Available speeds: 1x, 2x, 5x, or 10x packets per second."
+              title="Stream Rate Adjustment (On-the-fly)"
+              description="Dynamically changes how fast simulated network flows are ingested and evaluated."
+              details="You can change speed anytime while the stream is actively running! Speeds up to 50 flows/sec."
               position="bottom"
             >
               <select
                 value={replayRate}
-                onChange={(e) => setReplayRate(parseFloat(e.target.value))}
-                disabled={simStatus.is_running}
+                onChange={(e) => handleSpeedChange(parseFloat(e.target.value))}
                 style={{
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  color: 'var(--text-secondary)',
-                  padding: '7px 12px',
+                  background: 'rgba(255, 255, 255, 0.07)',
+                  border: '1px solid rgba(6, 182, 212, 0.35)',
+                  color: '#67e8f9',
+                  fontWeight: 600,
+                  padding: '8px 14px',
                   borderRadius: '10px',
                   fontSize: '0.8rem',
                   outline: 'none',
-                  cursor: simStatus.is_running ? 'not-allowed' : 'pointer',
+                  cursor: 'pointer',
+                  boxShadow: '0 0 12px rgba(6, 182, 212, 0.2)',
+                  transition: 'all 0.2s ease',
                 }}
               >
-                <option value="1.0" style={{ background: '#101727' }}>Speed: 1 flow/s</option>
-                <option value="2.0" style={{ background: '#101727' }}>Speed: 2 flows/s</option>
-                <option value="5.0" style={{ background: '#101727' }}>Speed: 5 flows/s</option>
-                <option value="10.0" style={{ background: '#101727' }}>Speed: 10 flows/s</option>
+                <option value="1.0" style={{ background: '#101727', color: '#f8fafc' }}>1x: 1 flow/sec (Relaxed)</option>
+                <option value="2.0" style={{ background: '#101727', color: '#f8fafc' }}>2x: 2 flows/sec (Standard)</option>
+                <option value="5.0" style={{ background: '#101727', color: '#f8fafc' }}>5x: 5 flows/sec (Fast)</option>
+                <option value="10.0" style={{ background: '#101727', color: '#f8fafc' }}>10x: 10 flows/sec (Turbo)</option>
+                <option value="25.0" style={{ background: '#101727', color: '#f8fafc' }}>25x: 25 flows/sec (Ultra)</option>
+                <option value="50.0" style={{ background: '#101727', color: '#f8fafc' }}>50x: 50 flows/sec (Maximum)</option>
               </select>
             </Tooltip>
 

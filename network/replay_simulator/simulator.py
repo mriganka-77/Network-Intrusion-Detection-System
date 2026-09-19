@@ -141,11 +141,26 @@ class ReplaySimulator:
             self.is_running = False
             print("Replay simulator thread exited.")
 
-    def start(self, rate_hz: float = 2.0):
-        if self.is_running:
-            return {"status": "already_running", "flows_streamed": self.flows_streamed}
+    def set_rate(self, rate_hz: float):
+        """Dynamically adjust speed on the fly."""
+        self.delay_seconds = max(0.01, 1.0 / float(rate_hz))
+        return {
+            "status": "speed_updated", 
+            "rate_hz": rate_hz, 
+            "delay_seconds": self.delay_seconds,
+            "is_running": self.is_running
+        }
 
-        self.delay_seconds = max(0.1, 1.0 / rate_hz)
+    def start(self, rate_hz: float = 2.0):
+        self.delay_seconds = max(0.01, 1.0 / float(rate_hz))
+        if self.is_running:
+            return {
+                "status": "speed_updated", 
+                "rate_hz": rate_hz, 
+                "delay_seconds": self.delay_seconds,
+                "flows_streamed": self.flows_streamed
+            }
+
         self.is_running = True
         self.thread = threading.Thread(target=self._worker, daemon=True)
         self.thread.start()
