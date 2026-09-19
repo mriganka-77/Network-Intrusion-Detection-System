@@ -1,0 +1,68 @@
+{
+  "model": "XGBoost",
+  "test_samples": 4115,
+  "false_positive_rate_pct": 0.2,
+  "classification_report": {
+    "Normal": {
+      "precision": 0.9842209072978304,
+      "recall": 0.998,
+      "f1-score": 0.9910625620655412,
+      "support": 1000.0
+    },
+    "DoS/DDoS": {
+      "precision": 0.9970089730807578,
+      "recall": 1.0,
+      "f1-score": 0.9985022466300549,
+      "support": 1000.0
+    },
+    "Brute Force": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 1000.0
+    },
+    "Port Scan": {
+      "precision": 1.0,
+      "recall": 0.9872122762148338,
+      "f1-score": 0.9935649935649936,
+      "support": 391.0
+    },
+    "Botnet": {
+      "precision": 0.9964912280701754,
+      "recall": 0.9861111111111112,
+      "f1-score": 0.9912739965095986,
+      "support": 288.0
+    },
+    "Other": {
+      "precision": 0.9976580796252927,
+      "recall": 0.9770642201834863,
+      "f1-score": 0.9872537659327926,
+      "support": 436.0
+    },
+    "accuracy": 0.9948967193195626,
+    "macro avg": {
+      "precision": 0.995896531345676,
+      "recall": 0.9913979345849052,
+      "f1-score": 0.9936095941171635,
+      "support": 4115.0
+    },
+    "weighted avg": {
+      "precision": 0.9949449032270781,
+      "recall": 0.9948967193195626,
+      "f1-score": 0.9948914396405762,
+      "support": 4115.0
+    }
+  },
+  "roc_auc_scores": {
+    "Normal": 0.9999287319422151,
+    "DoS/DDoS": 0.9999983948635635,
+    "Brute Force": 1.0,
+    "Port Scan": 0.9995123907686644,
+    "Botnet": 0.9999528206021543,
+    "Other": 0.9999457620863268
+  },
+  "plots": {
+    "confusion_matrix": "reports/confusion_matrix.png",
+    "roc_curves": "reports/roc_curves.png"
+  }
+}
