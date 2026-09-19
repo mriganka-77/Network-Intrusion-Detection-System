@@ -1,14 +1,17 @@
 import React from 'react';
+import Tooltip from './Tooltip';
 
-export default function MetricCard({ title, value, subtext, icon: Icon, color = 'cyan', badge }) {
-  const colorMap = {
-    cyan: 'text-cyan-400 border-cyan-500/20 shadow-cyan-500/10',
-    rose: 'text-rose-400 border-rose-500/20 shadow-rose-500/10',
-    amber: 'text-amber-400 border-amber-500/20 shadow-amber-500/10',
-    emerald: 'text-emerald-400 border-emerald-500/20 shadow-emerald-500/10',
-    purple: 'text-purple-400 border-purple-500/20 shadow-purple-500/10',
-  };
-
+export default function MetricCard({ 
+  title, 
+  value, 
+  subtext, 
+  icon: Icon, 
+  color = 'cyan', 
+  badge,
+  tooltipTitle,
+  tooltipDesc,
+  tooltipDetails
+}) {
   const accentColor = {
     cyan: '#06b6d4',
     rose: '#f43f5e',
@@ -17,45 +20,61 @@ export default function MetricCard({ title, value, subtext, icon: Icon, color = 
     purple: '#a855f7',
   }[color] || '#06b6d4';
 
-  return (
+  const cardContent = (
     <div 
-      className="glass-panel glass-panel-hover"
+      className="liquid-glass-card"
       style={{
-        padding: '20px 24px',
+        padding: '22px 26px',
         position: 'relative',
-        overflow: 'hidden',
+        cursor: 'help',
+        width: '100%',
+        minHeight: '140px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
       }}
     >
+      {/* 3D Liquid Accent Edge */}
       <div style={{
         position: 'absolute',
         top: 0,
         left: 0,
         width: '4px',
         height: '100%',
-        backgroundColor: accentColor,
-        boxShadow: `0 0 12px ${accentColor}`,
+        background: `linear-gradient(180deg, ${accentColor}, rgba(99, 102, 241, 0.6))`,
+        boxShadow: `0 0 16px ${accentColor}`,
       }} />
 
+      {/* Top row */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <span style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', fontWeight: 600 }}>
+          <span style={{ 
+            fontSize: '0.78rem', 
+            textTransform: 'uppercase', 
+            letterSpacing: '0.06em', 
+            color: 'var(--text-muted)', 
+            fontWeight: 700 
+          }}>
             {title}
           </span>
-          <div style={{ fontSize: '1.875rem', fontWeight: 800, marginTop: '6px', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+          <div style={{ 
+            fontSize: '2rem', 
+            fontWeight: 800, 
+            marginTop: '6px', 
+            color: 'var(--text-primary)', 
+            letterSpacing: '-0.02em',
+            textShadow: '0 2px 10px rgba(0,0,0,0.5)'
+          }}>
             {value}
           </div>
-          {subtext && (
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-              {subtext}
-            </div>
-          )}
         </div>
 
         <div style={{
           padding: '10px',
-          borderRadius: '10px',
+          borderRadius: '12px',
           backgroundColor: 'rgba(255, 255, 255, 0.04)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
+          border: '1px solid rgba(255, 255, 255, 0.12)',
+          boxShadow: `0 4px 14px ${accentColor}22`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -64,13 +83,37 @@ export default function MetricCard({ title, value, subtext, icon: Icon, color = 
         </div>
       </div>
 
-      {badge && (
-        <div style={{ marginTop: '14px', paddingTop: '10px', borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
-          <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '12px', background: 'rgba(255,255,255,0.06)', color: 'var(--text-secondary)' }}>
+      {/* Bottom Subtext and Badge */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginTop: '12px', 
+        paddingTop: '10px', 
+        borderTop: '1px solid rgba(255, 255, 255, 0.06)' 
+      }}>
+        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+          {subtext}
+        </div>
+        {badge && (
+          <span className="glass-badge" style={{ borderColor: `${accentColor}44`, color: accentColor, background: `${accentColor}11` }}>
             {badge}
           </span>
-        </div>
-      )}
+        )}
+      </div>
     </div>
+  );
+
+  return (
+    <Tooltip
+      title={tooltipTitle || title}
+      description={tooltipDesc || subtext}
+      details={tooltipDetails}
+      badge="Metric Telemetry"
+      position="bottom"
+      maxWidth="320px"
+    >
+      {cardContent}
+    </Tooltip>
   );
 }
