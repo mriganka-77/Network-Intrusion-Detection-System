@@ -3,9 +3,11 @@ FastAPI route handlers for AI-NIDS.
 Exposes endpoints for telemetry, threat stats, alerts feed, simulation controls, and inference.
 """
 
+import os
 from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
@@ -16,6 +18,8 @@ from backend.inference.service import InferenceService
 from network.replay_simulator.simulator import ReplaySimulator
 
 router = APIRouter()
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+PDF_PATH = os.path.join(BASE_DIR, "AI_NIDS_Comprehensive_Guide.pdf")
 
 
 class StatusUpdateRequest(BaseModel):
@@ -160,6 +164,18 @@ def reset_database(db: Session = Depends(get_db)):
     db.query(FlowRecord).delete()
     db.commit()
     return {"status": "success", "message": "All flow and alert records purged"}
+
+
+@router.get("/report/pdf")
+def download_pdf_guide():
+    """Download the comprehensive AI-NIDS PDF guide."""
+    if not os.path.exists(PDF_PATH):
+        raise HTTPException(status_code=404, detail="PDF report not found. Run generate_report_pdf.py first.")
+    return FileResponse(
+        PDF_PATH,
+        media_type="application/pdf",
+        filename="AI_NIDS_Comprehensive_Guide.pdf"
+    )
 
 
 def format_bytes(bytes_num: int) -> str:

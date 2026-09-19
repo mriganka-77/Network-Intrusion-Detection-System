@@ -11,7 +11,8 @@ import {
   CheckCircle2, 
   Zap,
   Layers,
-  Database
+  Database,
+  FileText
 } from 'lucide-react';
 
 import MetricCard from './components/MetricCard';
@@ -210,6 +211,19 @@ export default function App() {
               <Cpu size={15} color="#06b6d4" />
               Model Benchmark
             </button>
+
+            {/* Download PDF Guide Button */}
+            <a
+              href={`${API_BASE}/report/pdf`}
+              download="AI_NIDS_Comprehensive_Guide.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-secondary"
+              style={{ fontSize: '0.8rem', textDecoration: 'none' }}
+            >
+              <FileText size={15} color="#38bdf8" />
+              PDF Guide
+            </a>
 
             {/* Replay Speed Selector */}
             <select
