@@ -24,6 +24,7 @@ def load_feature_schema() -> dict:
 
 
 def load_data_from_archive(
+    use_full_dataset: bool = True,
     benign_sample_size: int = 100000,
     dos_sample_size: int = 80000,
     test_size: float = 0.20,
@@ -31,8 +32,8 @@ def load_data_from_archive(
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series, List[str]]:
     """
     Directly loads parquet files from archive/ into memory,
-    maps labels, samples for class balance while keeping 100% of minority attacks,
-    and returns (X_train, X_test, y_train, y_test, feature_names).
+    maps labels to canonical classes, and returns train/test splits.
+    If use_full_dataset=True, trains on the entire 2,313,810 records without downsampling.
     """
     schema = load_feature_schema()
     feature_names = schema["features"]
@@ -41,7 +42,7 @@ def load_data_from_archive(
     if not parquet_files:
         raise FileNotFoundError(f"No parquet files found in {ARCHIVE_DIR}")
 
-    print(f"Loading {len(parquet_files)} parquet files directly from {ARCHIVE_DIR}...")
+    print(f"Loading all {len(parquet_files)} parquet files directly from {ARCHIVE_DIR}...")
     dfs = []
     for pf in parquet_files:
         fname = os.path.basename(pf)
@@ -52,29 +53,33 @@ def load_data_from_archive(
         dfs.append(df)
 
     full_df = pd.concat(dfs, ignore_index=True)
-    print(f"Total raw rows loaded: {len(full_df):,}")
+    print(f"Total raw records loaded: {len(full_df):,}")
 
-    # Class balance sampling: keep 100% of rare attacks, sample benign and DoS
-    sampled_dfs = []
-    for cls in CANONICAL_CLASSES:
-        cls_df = full_df[full_df["Canonical_Label"] == cls]
-        cls_count = len(cls_df)
-        
-        if cls == "Normal":
-            n = min(benign_sample_size, cls_count)
-            sampled = cls_df.sample(n=n, random_state=random_state)
-        elif cls == "DoS/DDoS":
-            n = min(dos_sample_size, cls_count)
-            sampled = cls_df.sample(n=n, random_state=random_state)
-        else:
-            # 100% of minority attacks preserved!
-            sampled = cls_df
+    if use_full_dataset:
+        print("Using 100% of the entire real dataset without downsampling (2,313,810 rows)!")
+        combined = full_df
+    else:
+        # Class balance sampling option
+        sampled_dfs = []
+        for cls in CANONICAL_CLASSES:
+            cls_df = full_df[full_df["Canonical_Label"] == cls]
+            cls_count = len(cls_df)
             
-        print(f"  {cls:<12}: using {len(sampled):,} rows (from {cls_count:,} total)")
-        sampled_dfs.append(sampled)
+            if cls == "Normal":
+                n = min(benign_sample_size, cls_count)
+                sampled = cls_df.sample(n=n, random_state=random_state)
+            elif cls == "DoS/DDoS":
+                n = min(dos_sample_size, cls_count)
+                sampled = cls_df.sample(n=n, random_state=random_state)
+            else:
+                sampled = cls_df
+                
+            print(f"  {cls:<12}: using {len(sampled):,} rows (from {cls_count:,} total)")
+            sampled_dfs.append(sampled)
 
-    combined = pd.concat(sampled_dfs, ignore_index=True)
-    print(f"\nFinal in-memory balanced dataset: {len(combined):,} rows")
+        combined = pd.concat(sampled_dfs, ignore_index=True)
+
+    print(f"\nTraining dataset shape: {len(combined):,} rows x {len(feature_names)} features")
 
     # Features and labels
     X = combined[feature_names].copy()

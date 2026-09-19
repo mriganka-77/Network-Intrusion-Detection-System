@@ -29,10 +29,9 @@ def train_models():
     print("AI-NIDS: Starting Offline ML Training Pipeline")
     print("=" * 65)
 
-    # 1. Load data directly from archive/
+    # 1. Load data directly from archive/ (100% full dataset, 2,313,810 rows)
     X_train, X_test, y_train, y_test, _ = load_data_from_archive(
-        benign_sample_size=100000,
-        dos_sample_size=80000,
+        use_full_dataset=True,
         test_size=0.20,
         random_state=42
     )
@@ -41,11 +40,12 @@ def train_models():
 
     # 2. Train Random Forest Baseline
     print("-" * 65)
-    print("Training Model 1: Random Forest Classifier (n_estimators=100, max_depth=20)...")
+    print("Training Model 1: Random Forest Classifier (scaled for 1.85M rows)...")
     t0 = time.time()
     rf = RandomForestClassifier(
-        n_estimators=100,
-        max_depth=20,
+        n_estimators=60,
+        max_depth=18,
+        max_samples=0.25,  # Bagging 25% of 1.85M rows per tree for high speed & low memory footprint
         n_jobs=-1,
         class_weight="balanced",
         random_state=42
