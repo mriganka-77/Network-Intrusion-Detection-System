@@ -60,7 +60,13 @@ export default function App() {
         const data = await alertsRes.json();
         setAlerts(data.alerts || []);
       }
-      if (simRes.ok) setSimStatus(await simRes.json());
+      if (simRes.ok) {
+        const simData = await simRes.json();
+        setSimStatus(simData);
+        if (simData.rate_hz && simData.is_running) {
+          setReplayRate(Number(simData.rate_hz));
+        }
+      }
       setIsConnected(true);
     } catch (err) {
       console.warn('Backend polling error:', err);
@@ -68,11 +74,21 @@ export default function App() {
     }
   }, []);
 
+  // Polling data fetcher with adaptive frequency based on replay speed
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 1500);
+    // Dynamic polling: fast polling when simulation is active at high rate
+    let pollInterval = 1200;
+    if (simStatus.is_running) {
+      if (replayRate >= 25) pollInterval = 250;
+      else if (replayRate >= 10) pollInterval = 400;
+      else if (replayRate >= 5) pollInterval = 600;
+      else if (replayRate >= 2) pollInterval = 800;
+      else pollInterval = 1000;
+    }
+    const interval = setInterval(fetchData, pollInterval);
     return () => clearInterval(interval);
-  }, [fetchData]);
+  }, [fetchData, simStatus.is_running, replayRate]);
 
   // Simulator controls
   const handleToggleSimulation = async () => {
@@ -84,7 +100,7 @@ export default function App() {
         await fetch(`${API_BASE}/simulate/start`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ rate_hz: replayRate }),
+          body: JSON.stringify({ rate_hz: Number(replayRate) }),
         });
       }
       await fetchData();
@@ -97,14 +113,19 @@ export default function App() {
 
   // Dynamic speed adjustment on the fly
   const handleSpeedChange = async (newRate) => {
-    setReplayRate(newRate);
+    const rateVal = Number(newRate);
+    setReplayRate(rateVal);
     if (simStatus.is_running) {
       try {
-        await fetch(`${API_BASE}/simulate/speed`, {
+        const res = await fetch(`${API_BASE}/simulate/speed`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ rate_hz: newRate }),
+          body: JSON.stringify({ rate_hz: rateVal }),
         });
+        if (res.ok) {
+          const updated = await res.json();
+          setSimStatus(prev => ({ ...prev, delay_seconds: updated.delay_seconds, rate_hz: updated.rate_hz }));
+        }
         await fetchData();
       } catch (err) {
         console.error('Failed to dynamically update speed:', err);
@@ -290,30 +311,53 @@ export default function App() {
               details="You can change speed anytime while the stream is actively running! Speeds up to 50 flows/sec."
               position="bottom"
             >
-              <select
-                value={replayRate}
-                onChange={(e) => handleSpeedChange(parseFloat(e.target.value))}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.07)',
-                  border: '1px solid rgba(6, 182, 212, 0.35)',
-                  color: '#67e8f9',
-                  fontWeight: 600,
-                  padding: '8px 14px',
-                  borderRadius: '10px',
-                  fontSize: '0.8rem',
-                  outline: 'none',
-                  cursor: 'pointer',
-                  boxShadow: '0 0 12px rgba(6, 182, 212, 0.2)',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                <option value="1.0" style={{ background: '#101727', color: '#f8fafc' }}>1x: 1 flow/sec (Relaxed)</option>
-                <option value="2.0" style={{ background: '#101727', color: '#f8fafc' }}>2x: 2 flows/sec (Standard)</option>
-                <option value="5.0" style={{ background: '#101727', color: '#f8fafc' }}>5x: 5 flows/sec (Fast)</option>
-                <option value="10.0" style={{ background: '#101727', color: '#f8fafc' }}>10x: 10 flows/sec (Turbo)</option>
-                <option value="25.0" style={{ background: '#101727', color: '#f8fafc' }}>25x: 25 flows/sec (Ultra)</option>
-                <option value="50.0" style={{ background: '#101727', color: '#f8fafc' }}>50x: 50 flows/sec (Maximum)</option>
-              </select>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <select
+                  id="replay-speed-select"
+                  value={replayRate}
+                  onChange={(e) => handleSpeedChange(Number(e.target.value))}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.07)',
+                    border: '1px solid rgba(6, 182, 212, 0.35)',
+                    color: '#67e8f9',
+                    fontWeight: 600,
+                    padding: '8px 14px',
+                    borderRadius: '10px',
+                    fontSize: '0.8rem',
+                    outline: 'none',
+                    cursor: 'pointer',
+                    boxShadow: '0 0 12px rgba(6, 182, 212, 0.2)',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <option value={1} style={{ background: '#101727', color: '#f8fafc' }}>1x: 1 flow/sec (Relaxed)</option>
+                  <option value={2} style={{ background: '#101727', color: '#f8fafc' }}>2x: 2 flows/sec (Standard)</option>
+                  <option value={5} style={{ background: '#101727', color: '#f8fafc' }}>5x: 5 flows/sec (Fast)</option>
+                  <option value={10} style={{ background: '#101727', color: '#f8fafc' }}>10x: 10 flows/sec (Turbo)</option>
+                  <option value={25} style={{ background: '#101727', color: '#f8fafc' }}>25x: 25 flows/sec (Ultra)</option>
+                  <option value={50} style={{ background: '#101727', color: '#f8fafc' }}>50x: 50 flows/sec (Maximum)</option>
+                </select>
+
+                <div 
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    padding: '6px 10px',
+                    borderRadius: '8px',
+                    background: simStatus.is_running ? 'rgba(6, 182, 212, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                    border: simStatus.is_running ? '1px solid rgba(6, 182, 212, 0.4)' : '1px solid rgba(255, 255, 255, 0.1)',
+                    color: simStatus.is_running ? '#22d3ee' : '#94a3b8',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.5px',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  <Zap size={13} color={simStatus.is_running ? '#22d3ee' : '#94a3b8'} />
+                  <span>{replayRate}x ({replayRate} f/s)</span>
+                </div>
+              </div>
             </Tooltip>
 
             {/* Traffic Replay Toggle Button */}
@@ -493,6 +537,19 @@ export default function App() {
                     <span style={{ color: 'var(--text-muted)' }}>Flows Analyzed:</span>
                     <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: '#f8fafc' }}>
                       {simStatus.flows_streamed?.toLocaleString() || 0}
+                    </span>
+                  </div>
+                </Tooltip>
+
+                <Tooltip
+                  title="Replay Throughput Rate"
+                  description="Real-time frequency of simulated network flows ingested and analyzed per second."
+                  position="left"
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', cursor: 'help', width: '100%' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Throughput Rate:</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: simStatus.is_running ? '#38bdf8' : '#94a3b8' }}>
+                      {simStatus.is_running ? `⚡ ${replayRate} flows/s (${replayRate}x)` : '0 flows/s (Idle)'}
                     </span>
                   </div>
                 </Tooltip>

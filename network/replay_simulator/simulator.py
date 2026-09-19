@@ -176,9 +176,11 @@ class ReplaySimulator:
         return {"status": "stopped", "flows_streamed": self.flows_streamed, "threats_flagged": self.threats_flagged}
 
     def get_status(self):
+        rate = round(1.0 / self.delay_seconds, 1) if self.delay_seconds > 0 else 0
         return {
             "is_running": self.is_running,
             "flows_streamed": self.flows_streamed,
             "threats_flagged": self.threats_flagged,
-            "delay_seconds": self.delay_seconds
+            "delay_seconds": self.delay_seconds,
+            "rate_hz": rate
         }
